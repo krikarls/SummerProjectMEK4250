@@ -8,7 +8,7 @@ To obtain the final sebra_mesh.vtu the following commands/scripts have been used
 	vmtklevelsetsegmentation -ifile selected_voi.vti -ofile level_sets.vti
 
 	Colliding fronts
-		Lower threshold: 50
+		Lower threshold: see threshhold_distribution.txt
 		Upper threshold: n
 		No. iterations: 300
 
@@ -18,9 +18,7 @@ To obtain the final sebra_mesh.vtu the following commands/scripts have been used
 
 3) Smoothing of surface
 
-	vmtksurfacesmoothing -ifile surf.vtp -passband 0.01 -iterations 30 -ofile smooth1_surf.vtp 
-
-	vmtksurfacesmoothing -ifile surf.vtp -passband 0.001 -iterations 30 -ofile smooth2_surf.vtp
+	vmtksurfacesmoothing -ifile surf.vtp -passband 0.0005 -iterations 30 -ofile smooth2_surf.vtp
 
 4) Clipping of surface
 
@@ -28,11 +26,15 @@ To obtain the final sebra_mesh.vtu the following commands/scripts have been used
 
 5) Generate mesh
 
-	vmtkmeshgenerator -ifile cl_surface.vtp -ofile sebra_mesh.vtu -edgelength 1.0
+	vmtkmeshgenerator -ifile cl_surface.vtp -ofile sebra_mesh.vtu -edgelength 1.1
+
+6) Convert to dolfin-format
+
+	vmtkmeshwriter sebra_mesh.vtu -entityidsarray CellEntityIds -ofile zebra_mesh.xml
 
 COMMENTS:
 
-I can't seem to avoid getting sharp edges. 
+Can't get fenics to read the mesh.
 
 
 

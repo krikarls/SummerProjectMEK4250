@@ -24,7 +24,7 @@ To obtain the final sebra_mesh.vtu the following commands/scripts have been used
 
 4) Clipping of surface
 
-	vmtksurfaceclipper -ifile smooth_surf.vtp -ofile cl_surface.vtp
+	vmtksurfaceclipper -ifile smooth_surface.vtp -ofile cl_surface.vtp
 
 5) Generate mesh
 
