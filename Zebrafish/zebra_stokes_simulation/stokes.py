@@ -1,7 +1,6 @@
 from dolfin import *
 
 mesh = Mesh("orthogonal_surface_zebra_mesh.xml")
-V = FunctionSpace(mesh,'CG',1)
 
 """
 The mesh is constructed such that the openings are orthogonal to the
@@ -22,29 +21,35 @@ print 'Min and max z-value: ' , min(z) ,'  ', max(z)
 """
 
 # Mark boundaries
+class NoSlip(SubDomain): 				
+	def inside(self, x, on_boundry):
+		return on_boundry
+
 class Passive(SubDomain): 				# y-max surface
 	def inside(self, x, on_boundry):
 		return (x[1] > 373.639-0.01) and on_boundry
 
-class Inlet(SubDomain): 				# x-min surface
+class Outlet(SubDomain): 				# x-min surface
 	def inside(self, x, on_boundry):
 		return (x[0] < 282.272+0.01) and on_boundry
 
-class Outlet(SubDomain): 				# x-max surface, y < 330
+class Inlet(SubDomain): 				# x-max surface, y < 330
 	def inside(self, x, on_boundry):
 		return (x[0] > 325.545-4) and (x[1] < 330.) and on_boundry
 
+noslip = NoSlip()
 passive_boundary = Passive()
 inlet = Inlet()
 outlet = Outlet()
 
 mf = FacetFunction("size_t", mesh)
-mf.set_all(0)
+mf.set_all(4)
 
+noslip.mark(mf,0)
 passive_boundary.mark(mf, 1)
 inlet.mark(mf,2)
 outlet.mark(mf,3)
-plot(mf,title='mesh function',interactive=True)
+plot(mf,interactive=True)
 
 # Define spaces and test/trial functions
 V = VectorFunctionSpace(mesh, "CG", 1)
@@ -56,7 +61,7 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Set boundary conditions
-inlet_pressure = Constant(100)
+inlet_pressure = Constant(0.1)
 outlet_pressure = Constant(0)
 p_in = DirichletBC(W.sub(1), inlet_pressure, mf, 2)
 p_out = DirichletBC(W.sub(1), outlet_pressure, mf, 3)
