@@ -61,10 +61,7 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Set boundary conditions
-inlet_pressure = Constant(-1.)
-outlet_pressure = Constant(0)
-p_in = DirichletBC(W.sub(1), inlet_pressure, mf, 2)
-p_out = DirichletBC(W.sub(1), outlet_pressure, mf, 3)
+p_in = Expression('0.5*sin(t)-2', t=0)
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
 bcs = [noslip]
 
@@ -77,19 +74,31 @@ f = Constant((0,0,0))
 n = FacetNormal(mesh)
 ds = ds[mf]
 
+time_steps = 100
+dt = 0.05 
+T = dt*time_steps
+
 a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet_pressure*n)*ds(2) 
+L = inner(v + epsilon*grad(q), f)*dx + inner(v,p_in*n)*ds(2) 
 
-# Compute solution
-solve(a == L, w, bcs)
+ufile = File('velocity.pvd')
+pfile = File('pressure.pvd')
 
-(u, p) = w.split()
+t = 0
+for i in range(0,time_steps):
+	print 'Progress(time): ', t,'/',T, '  ', 100.*(t/T), '%'
+	# Update BC
+	p_in.t = t
 
-file = File('velocity.pvd')
-file << u
+	# Compute solution
+	solve(a == L, w, bcs)
+	(u, p) = w.split()
 
-file = File('pressure.pvd')
-file << p
+	ufile << u
+	pfile << p
+
+	t += dt
+
 
 plot(u,title='velocity')
 plot(p,title='pressure')

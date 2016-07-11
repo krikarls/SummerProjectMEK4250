@@ -49,7 +49,7 @@ noslip.mark(mf,0)
 passive_boundary.mark(mf, 1)
 inlet.mark(mf,2)
 outlet.mark(mf,3)
-#plot(mf,interactive=True)
+plot(mf,interactive=True)
 
 # Define spaces and test/trial functions
 V = VectorFunctionSpace(mesh, "CG", 1)
@@ -61,35 +61,27 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Set boundary conditions
-inlet_pressure = Constant(-1.)
+inlet_pressure = Constant(0.1)
 outlet_pressure = Constant(0)
 p_in = DirichletBC(W.sub(1), inlet_pressure, mf, 2)
 p_out = DirichletBC(W.sub(1), outlet_pressure, mf, 3)
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
-bcs = [noslip]
+bcs = [p_in, noslip]
 
 # Define variational problem
 h = CellSize(mesh)
 beta  = 0.1
 epsilon = beta*h*h
 f = Constant((0,0,0))
-
 n = FacetNormal(mesh)
-ds = ds[mf]
 
-a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet_pressure*n)*ds(2) 
+a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx #+ inlet_pressure*inner(n, v)*ds(2) 
+L = inner(v + epsilon*grad(q), f)*dx
 
 # Compute solution
 solve(a == L, w, bcs)
 
 (u, p) = w.split()
-
-file = File('velocity.pvd')
-file << u
-
-file = File('pressure.pvd')
-file << p
 
 plot(u,title='velocity')
 plot(p,title='pressure')
