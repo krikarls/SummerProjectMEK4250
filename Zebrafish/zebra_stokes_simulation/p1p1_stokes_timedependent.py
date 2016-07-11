@@ -75,14 +75,14 @@ n = FacetNormal(mesh)
 ds = ds[mf]
 
 time_steps = 100
-dt = 0.05 
+dt = 0.1 
 T = dt*time_steps
 
 a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
 L = inner(v + epsilon*grad(q), f)*dx + inner(v,p_in*n)*ds(2) 
 
-ufile = File('velocity.pvd')
-pfile = File('pressure.pvd')
+ufile = File('results/velocity.pvd')
+pfile = File('results/pressure.pvd')
 
 t = 0
 for i in range(0,time_steps):
