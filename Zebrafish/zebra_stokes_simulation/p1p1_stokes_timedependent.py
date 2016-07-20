@@ -1,6 +1,6 @@
 from dolfin import *
 
-mesh = Mesh("orthogonal_surface_zebra_mesh.xml")
+mesh = Mesh("coarse.xml")
 
 """
 The mesh is constructed such that the openings are orthogonal to the

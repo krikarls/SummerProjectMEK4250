@@ -1,6 +1,6 @@
 from dolfin import *
 
-mesh = Mesh("orthogonal_surface_zebra_mesh.xml")
+mesh = Mesh("coarse.xml")
 
 """
 The mesh is constructed such that the openings are orthogonal to the
@@ -46,9 +46,9 @@ mf = FacetFunction("size_t", mesh)
 mf.set_all(4)
 
 noslip.mark(mf,0)
-passive_boundary.mark(mf, 1)
-inlet.mark(mf,2)
-outlet.mark(mf,3)
+inlet.mark(mf,1)
+outlet.mark(mf,2)
+passive_boundary.mark(mf, 3)
 #plot(mf,interactive=True)
 
 # Define spaces and test/trial functions
@@ -61,10 +61,9 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Set boundary conditions
-inlet_pressure = Constant(-1.)
-outlet_pressure = Constant(0)
-p_in = DirichletBC(W.sub(1), inlet_pressure, mf, 2)
-p_out = DirichletBC(W.sub(1), outlet_pressure, mf, 3)
+inlet1_pressure = Constant(0.)
+outlet2_pressure = Constant(1)
+outlet3_pressure = Constant(2)
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
 bcs = [noslip]
 
@@ -78,7 +77,8 @@ n = FacetNormal(mesh)
 ds = ds[mf]
 
 a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet_pressure*n)*ds(2) 
+L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(0) + \
+	inner(v,outlet2_pressure*n)*ds(2) + inner(v,outlet3_pressure*n)*ds(3)
 
 # Compute solution
 solve(a == L, w, bcs)
