@@ -1,12 +1,13 @@
 from dolfin import *
 
-mesh = Mesh("coarse.xml")
+mesh = Mesh("new_coarser.xml")
 
 """
 The mesh is constructed such that the openings are orthogonal to the
 coordinate axis. Then, marking the boundaries are easy since they 
 are simply given by planes in max/min-values of the mesh coordinates.
 
+V = FunctionSpace(mesh, "CG", 1)
 x = interpolate(Expression("x[0]"),V)
 y = interpolate(Expression("x[1]"),V)
 z = interpolate(Expression("x[2]"),V)
@@ -25,31 +26,29 @@ class NoSlip(SubDomain):
 	def inside(self, x, on_boundry):
 		return on_boundry
 
-class Passive(SubDomain): 				# y-max surface
+class Inlet(SubDomain): 				# y-max surface
 	def inside(self, x, on_boundry):
-		return (x[1] > 373.639-0.01) and on_boundry
+		return (x[1] > 367.467-0.01) and on_boundry
 
-class Outlet(SubDomain): 				# x-min surface
+class Passive(SubDomain): 				# x-min surface
 	def inside(self, x, on_boundry):
-		return (x[0] < 282.272+0.01) and on_boundry
+		return (x[0] < 296.37+0.01) and on_boundry
 
-class Inlet(SubDomain): 				# x-max surface, y < 330
+class Outlet(SubDomain): 				# x-max surface, y < 330
 	def inside(self, x, on_boundry):
-		return (x[0] > 325.545-4) and (x[1] < 330.) and on_boundry
-
-noslip = NoSlip()
-passive_boundary = Passive()
-inlet = Inlet()
-outlet = Outlet()
+		return (x[0] > 325.491-4) and (x[1] < 330.) and on_boundry
 
 mf = FacetFunction("size_t", mesh)
 mf.set_all(4)
 
-noslip.mark(mf,0)
-inlet.mark(mf,1)
-outlet.mark(mf,2)
-passive_boundary.mark(mf, 3)
+NoSlip().mark(mf,0)
+Inlet().mark(mf,1)
+Outlet().mark(mf,2)
+Passive().mark(mf, 3)
 #plot(mf,interactive=True)
+
+# Physical parameters
+mu = 3.5*1e-9 		# kg/(micrometer*s)
 
 # Define spaces and test/trial functions
 V = VectorFunctionSpace(mesh, "CG", 1)
@@ -61,9 +60,13 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Set boundary conditions
-inlet1_pressure = Constant(0.)
-outlet2_pressure = Constant(1)
-outlet3_pressure = Constant(2)
+
+p_in = 80*1e-7
+p_in = p_in - 0.1*p_in 
+
+inlet1_pressure = Constant(p_in)
+outlet2_pressure = Constant(Constant(p_in+ 0.3*p_in))
+outlet3_pressure = Constant(Constant(p_in)) 
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
 bcs = [noslip]
 
@@ -76,7 +79,7 @@ f = Constant((0,0,0))
 n = FacetNormal(mesh)
 ds = ds[mf]
 
-a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
+a = (mu*inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
 L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(0) + \
 	inner(v,outlet2_pressure*n)*ds(2) + inner(v,outlet3_pressure*n)*ds(3)
 
@@ -92,5 +95,4 @@ file = File('pressure.pvd')
 file << p
 
 plot(u,title='velocity')
-plot(p,title='pressure')
 interactive()
