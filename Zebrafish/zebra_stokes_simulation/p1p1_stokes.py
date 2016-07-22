@@ -21,7 +21,6 @@ print 'Min and max y-value: ' , min(y) ,'  ', max(y)
 print 'Min and max z-value: ' , min(z) ,'  ', max(z) 
 """
 
-# Mark boundaries
 class NoSlip(SubDomain): 				
 	def inside(self, x, on_boundry):
 		return on_boundry
@@ -47,9 +46,6 @@ Outlet().mark(mf,2)
 Passive().mark(mf, 3)
 #plot(mf,interactive=True)
 
-# Physical parameters
-mu = 3.5*1e-9 		# kg/(micrometer*s)
-
 # Define spaces and test/trial functions
 V = VectorFunctionSpace(mesh, "CG", 1)
 Q = FunctionSpace(mesh, "CG", 1)
@@ -59,20 +55,26 @@ w = Function(W)
 (u, p) = TrialFunctions(W)
 (v, q) = TestFunctions(W)
 
+# Physical parameters
+mu = 3.5*1e-9 						# kg/(micrometer*s)
+p_atm = 101e-3 						# kg/(micrometem*s^2).
+distance_between_openings = 58 		# micrometer
+pressure_gradient = 2.2e-7			# (kg/(micrometer*s^2))/micrometer
+
 # Set boundary conditions
+p_0 = p_atm
+pressure_difference = distance_between_openings*pressure_gradient
 
-p_in = 80*1e-7
-p_in = p_in - 0.1*p_in 
-
-inlet1_pressure = Constant(p_in)
-outlet2_pressure = Constant(Constant(p_in+ 0.3*p_in))
-outlet3_pressure = Constant(Constant(p_in)) 
+inlet1_pressure = Constant(p_0)
+outlet2_pressure = Constant(Constant(p_0+pressure_difference))
+outlet3_pressure = Constant(Constant(p_0+0.75*pressure_difference)) 
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
+
 bcs = [noslip]
 
 # Define variational problem
-h = CellSize(mesh)
-beta  = 0.1
+h = CellSize(mesh) 					# stabilization parameters
+beta  = 0.1 						
 epsilon = beta*h*h
 f = Constant((0,0,0))
 
@@ -80,7 +82,7 @@ n = FacetNormal(mesh)
 ds = ds[mf]
 
 a = (mu*inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(0) + \
+L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(1) + \
 	inner(v,outlet2_pressure*n)*ds(2) + inner(v,outlet3_pressure*n)*ds(3)
 
 # Compute solution
@@ -95,4 +97,5 @@ file = File('pressure.pvd')
 file << p
 
 plot(u,title='velocity')
+plot(p,title='pressure')
 interactive()

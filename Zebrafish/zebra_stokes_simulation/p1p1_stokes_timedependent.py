@@ -1,6 +1,6 @@
 from dolfin import *
 
-mesh = Mesh("coarse.xml")
+mesh = Mesh("new_coarser.xml")
 
 """
 The mesh is constructed such that the openings are orthogonal to the
@@ -25,30 +25,25 @@ class NoSlip(SubDomain):
 	def inside(self, x, on_boundry):
 		return on_boundry
 
-class Passive(SubDomain): 				# y-max surface
+class Inlet(SubDomain): 				# y-max surface
 	def inside(self, x, on_boundry):
-		return (x[1] > 373.639-0.01) and on_boundry
+		return (x[1] > 367.467-0.01) and on_boundry
 
-class Outlet(SubDomain): 				# x-min surface
+class Passive(SubDomain): 				# x-min surface
 	def inside(self, x, on_boundry):
-		return (x[0] < 282.272+0.01) and on_boundry
+		return (x[0] < 296.37+0.01) and on_boundry
 
-class Inlet(SubDomain): 				# x-max surface, y < 330
+class Outlet(SubDomain): 				# x-max surface, y < 330
 	def inside(self, x, on_boundry):
-		return (x[0] > 325.545-4) and (x[1] < 330.) and on_boundry
-
-noslip = NoSlip()
-passive_boundary = Passive()
-inlet = Inlet()
-outlet = Outlet()
+		return (x[0] > 325.491-4) and (x[1] < 330.) and on_boundry
 
 mf = FacetFunction("size_t", mesh)
 mf.set_all(4)
 
-noslip.mark(mf,0)
-passive_boundary.mark(mf, 1)
-inlet.mark(mf,2)
-outlet.mark(mf,3)
+NoSlip().mark(mf,0)
+Inlet().mark(mf,1)
+Outlet().mark(mf,2)
+Passive().mark(mf, 3)
 #plot(mf,interactive=True)
 
 # Define spaces and test/trial functions
@@ -60,8 +55,16 @@ w = Function(W)
 (u, p) = TrialFunctions(W)
 (v, q) = TestFunctions(W)
 
+# Physical parameters
+mu = 3.5*1e-9 		# kg/(micrometer*s)
+
 # Set boundary conditions
-p_in = Expression('0.5*sin(t)-2', t=0)
+p_in = 80*1e-7
+p_in = p_in - 0.1*p_in 
+
+inlet1_pressure = Expression('80*1e-7 + 0.1*80*1e-7*sin(5*pi*t)', t=0)
+outlet2_pressure = Constant(Constant(p_in+ 0.3*p_in))
+outlet3_pressure = Constant(Constant(p_in)) 
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
 bcs = [noslip]
 
@@ -75,20 +78,21 @@ n = FacetNormal(mesh)
 ds = ds[mf]
 
 time_steps = 100
-dt = 0.1 
+dt = 0.01 
 T = dt*time_steps
 
-a = (inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,p_in*n)*ds(2) 
+a = (mu*inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
+L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(0) + \
+	inner(v,outlet2_pressure*n)*ds(2) + inner(v,outlet3_pressure*n)*ds(3)
 
 ufile = File('results/velocity.pvd')
 pfile = File('results/pressure.pvd')
 
-t = 0
+t = 0.
 for i in range(0,time_steps):
 	print 'Progress(time): ', t,'/',T, '  ', 100.*(t/T), '%'
 	# Update BC
-	p_in.t = t
+	inlet1_pressure.t = t
 
 	# Compute solution
 	solve(a == L, w, bcs)
