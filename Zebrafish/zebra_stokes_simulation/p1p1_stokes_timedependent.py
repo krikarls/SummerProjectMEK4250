@@ -56,16 +56,20 @@ w = Function(W)
 (v, q) = TestFunctions(W)
 
 # Physical parameters
-mu = 3.5*1e-9 		# kg/(micrometer*s)
+mu = 3.5*1e-9 						# kg/(micrometer*s)
+p_atm = 101e-3 						# kg/(micrometem*s^2).
+distance_between_openings = 58 		# micrometer
+pressure_gradient = 2.2e-7			# (kg/(micrometer*s^2))/micrometer
 
 # Set boundary conditions
-p_in = 80*1e-7
-p_in = p_in - 0.1*p_in 
+p_0 = p_atm
+pressure_difference = distance_between_openings*pressure_gradient
 
-inlet1_pressure = Expression('80*1e-7 + 0.1*80*1e-7*sin(5*pi*t)', t=0)
-outlet2_pressure = Constant(Constant(p_in+ 0.3*p_in))
-outlet3_pressure = Constant(Constant(p_in)) 
+inlet1_pressure = Expression(("p_0 + 20*pressure_gradient*sin(5*pi*t)"),p_0=p_0,pressure_gradient=pressure_gradient, t=0)
+outlet2_pressure = Constant(Constant(p_0+pressure_difference))
+outlet3_pressure = Constant(Constant(p_0+0.75*pressure_difference)) 
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
+
 bcs = [noslip]
 
 # Define variational problem
@@ -82,7 +86,7 @@ dt = 0.01
 T = dt*time_steps
 
 a = (mu*inner(grad(v), grad(u)) + div(v)*p + q*div(u) - epsilon*inner(grad(q), grad(p)))*dx 
-L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(0) + \
+L = inner(v + epsilon*grad(q), f)*dx + inner(v,inlet1_pressure*n)*ds(1) + \
 	inner(v,outlet2_pressure*n)*ds(2) + inner(v,outlet3_pressure*n)*ds(3)
 
 ufile = File('results/velocity.pvd')

@@ -6,7 +6,7 @@ mesh = Mesh("new_coarser.xml")
 The mesh is constructed such that the openings are orthogonal to the
 coordinate axis. Then, marking the boundaries are easy since they 
 are simply given by planes in max/min-values of the mesh coordinates.
-
+"""
 V = FunctionSpace(mesh, "CG", 1)
 x = interpolate(Expression("x[0]"),V)
 y = interpolate(Expression("x[1]"),V)
@@ -65,7 +65,7 @@ pressure_gradient = 2.2e-7			# (kg/(micrometer*s^2))/micrometer
 p_0 = p_atm
 pressure_difference = distance_between_openings*pressure_gradient
 
-inlet1_pressure = Constant(p_0)
+inlet1_pressure = Constant(p_0 + 20*pressure_gradient)
 outlet2_pressure = Constant(Constant(p_0+pressure_difference))
 outlet3_pressure = Constant(Constant(p_0+0.75*pressure_difference)) 
 noslip = DirichletBC(W.sub(0), Constant((0,0,0)), mf, 0)
@@ -99,3 +99,4 @@ file << p
 plot(u,title='velocity')
 plot(p,title='pressure')
 interactive()
+"""
